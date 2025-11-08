@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+fab/
+tmp/
+agentbeats/
+*.egg-info/
+
+# CRITICAL - Secrets (NEVER COMMIT!)
+app/secrets/secrets.env
+secrets/secrets.env
+secrets/*.key
+secrets/*.pem
+.env
+*.key
+*.pem
+
+# Logs
+*.log
+logs/
+test_results/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+.dockerignore
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/

@@ -1,0 +1,29 @@
+[agent]
+name = "finance-agent-benchmark"
+version = "1.0.0"
+description = """
+Upgraded Finance-Agent-Benchmark using Kaggle 7000-record SEC 10-K Q&A dataset.
+Green Agent orchestrates evaluation; White Agent (LLM) uses MCP tools: EDGAR, Google Search, Parse HTML, Retrieve Info.
+"""
+author = "MOOC Group named AI-NOOB (Fabio, Milad, Kia)"
+entrypoint = "python app/green_agent.py"
+type = "green"  # Evaluator/orchestrator agent
+image = "yourdockerhubuser/finance-agent-benchmark:latest"  # Update after push
+
+[benchmark]
+dataset_path = "/data/Financial-QA-10k.csv"
+metric = "accuracy"
+task_type = "finance-qa-sec10k"
+num_tasks_max = 100
+description = "Evaluates white agents on SEC 10-K financial Q&A comprehension."
+
+[requirements]
+cpu = 4
+memory = "8Gi"
+gpu = false
+
+[env]
+# AgentBeats will inject these automatically at runtime
+AGENT_HOST = "0.0.0.0"
+MCP_PORT = "9000"
+DATASET_PATH = "/data/Financial-QA-10k.csv"
