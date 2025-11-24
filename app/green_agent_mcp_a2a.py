@@ -30,6 +30,11 @@ from tools.serp_search import serp_search
 from tools.edgar_search import edgar_search
 from tools.parse_html import parse_html
 from tools.retrieve_information import retrieve_information
+from tools.download_filing import download_filing_document
+from tools.get_filing_index import get_filing_index
+from tools.xbrl_facts import get_company_facts
+from tools.xbrl_parse import parse_xbrl
+
 
 from utils.env_setup import init_environment
 
@@ -183,12 +188,12 @@ class GreenAgent:
             ciks: list = None,
             start_date: str = "2024-01-01",
             end_date: str = "2024-12-31",
-            top_n: int = 5
+            top_n: int = 5,
         ) -> dict:
             """Search SEC EDGAR filings."""
 
             if self.verbose:
-                print(f"[GREEN] Calling edgar_search...", file=sys.stderr)
+                print("[GREEN] Calling edgar_search...", file=sys.stderr)
 
             try:
                 return await edgar_search(
@@ -197,7 +202,7 @@ class GreenAgent:
                     ciks=ciks or [],
                     start_date=start_date,
                     end_date=end_date,
-                    top_n_results=top_n
+                    top_n_results=top_n,
                 )
             except Exception as e:
                 return {"error": str(e)}
@@ -240,6 +245,69 @@ class GreenAgent:
                     llm_model=self.llm_model,
                     llm_api_key=self.llm_api_key
                 )
+            except Exception as e:
+                return {"error": str(e)}
+            
+        @self.mcp_server.tool()
+        async def download_filing_handler(
+            cik: str,
+            accession: str,
+            file_name: str,
+        ) -> dict:
+            """Download the raw filing document (HTML, text, XML, etc)."""
+
+            if self.verbose:
+                print("[GREEN] Calling download_filing_document...", file=sys.stderr)
+
+            try:
+                content = await download_filing_document(cik, accession, file_name)
+                return {"content": content}
+            except Exception as e:
+                return {"error": str(e)}
+        
+        @self.mcp_server.tool()
+        async def filing_index_handler(
+            cik: str,
+            accession: str,
+        ) -> dict:
+            """Fetch the filing index.json that lists all documents in a filing."""
+
+            if self.verbose:
+                print("[GREEN] Calling get_filing_index...", file=sys.stderr)
+
+            try:
+                index_json = await get_filing_index(cik, accession)
+                return index_json
+            except Exception as e:
+                return {"error": str(e)}
+        
+        @self.mcp_server.tool()
+        async def xbrl_facts_handler(
+            cik: str
+        ) -> dict:
+            """Fetch company XBRL facts from SEC."""
+
+            if self.verbose:
+                print("[GREEN] Calling get_company_facts...", file=sys.stderr)
+
+            try:
+                facts = await get_company_facts(cik)
+                return facts
+            except Exception as e:
+                return {"error": str(e)}
+        
+        @self.mcp_server.tool()
+        async def xbrl_parse_handler(
+            xbrl_text: str,
+        ) -> dict:
+            """Parse XBRL text using Arelle CLI and return structured JSON."""
+
+            if self.verbose:
+                print("[GREEN] Calling parse_xbrl...", file=sys.stderr)
+
+            try:
+                parsed = await parse_xbrl(xbrl_text)
+                return parsed
             except Exception as e:
                 return {"error": str(e)}
 
