@@ -18,10 +18,6 @@ from utils.env_setup import init_environment, is_docker
 # Initialize environment BEFORE importing agents
 init_environment()
 
-# Import agents AFTER environment is initialized
-#from green_agent import GreenAgent
-#from white_agent import WhiteAgent
-
 
 async def wait_agent_ready(url: str, timeout: int = 30) -> bool:
     """Poll agent's /card endpoint until ready"""
@@ -47,7 +43,7 @@ def start_green_agent(host: str, port: int):
     init_environment()
     
     # Import and create agent
-    from green_agent_mcp_a2a import GreenAgent
+    from green_agent_mcp_a2a_judge import GreenAgent
     print("[LAUNCHER] Using green_agent_mcp_a2a.py", file=sys.stderr)
     agent = GreenAgent()
     

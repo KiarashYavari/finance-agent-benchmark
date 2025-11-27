@@ -1,1 +1,1 @@
-python launcher.py --num_tasks 2 --env secrets\secrets.env
+python launcher.py --num_tasks 5 --env secrets\secrets.env
