@@ -219,31 +219,49 @@ python launcher.py --num_tasks 5
 ## Project Structure
 
 ```
-finance-agent-benchmark/
-├── app/
-│   ├── green_agent_mcp_a2a.py      # Green agent (orchestrator + MCP server)
-│   ├── white_agent_mcp_memory.py   # White agent (reasoner + MCP client)
-│   ├── launcher.py                 # Main launcher script
-│   ├── cards/
-│   │   ├── green_card.toml         # Green agent capabilities
-│   │   └── white_card.toml         # White agent capabilities
-│   ├── tools/
-│   │   ├── google_search.py        # Web search tool
-│   │   ├── serp_search.py          # SERP API search
-│   │   ├── edgar_search.py         # SEC EDGAR search
-│   │   ├── parse_html_page.py      # HTML parser
-│   │   └── retrieve_information.py # Text retrieval tool
-│   └── utils/
-│       └── env_setup.py            # Environment configuration
-├── data/
-│   └── public.csv                  # Evaluation dataset (alternative: Financial-QA-10k.csv)
-├── secrets/
-│   ├── secrets.env.example         # Template for secrets
-│   └── secrets.env                 # Your API keys (gitignored)
-├── Dockerfile                      # Docker container definition
-├── requirements.txt                # Python dependencies
-├── .gitignore                      # Git ignore rules
-└── README.md                       # This file
+finance-agent-benchmark
+├── app
+│   ├── cards
+│   │   ├── green_card.toml
+│   │   └── white_card.toml
+│   ├── data
+│   │   ├── public.csv  
+│   ├── eval_result.csv
+│   ├── eval_white.txt
+│   ├── green_agent_mcp_a2a_judge_rag.py
+│   ├── kill_agentbeats.sh
+│   ├── launcher.py
+│   ├── main.py   
+│   ├── run.bat
+│   ├── run_launcher.sh
+│   ├── run.sh
+│   ├── secrets
+│   │   ├── secrets.env
+│   │   └── secrets.env.example
+│   ├── tools
+│   │   ├── company_CIK.py
+│   │   ├── company_tickers.json
+│   │   ├── edgar_submissions.py
+│   │   ├── __init__.py
+│   │   ├── local_llm_rag.py
+│   │   ├── models
+│   │   │   └── Llama-3.2-1B-Instruct-Q4_K_M.gguf
+│   │   ├── sec_search_rag.py
+│   │   ├── today_date.py
+│   │   ├── xbrl_company_concept.py
+│   │   ├── xbrl_company_facts.py
+│   │   ├── xbrl_frames.py
+│   │   └── yfinance_search.py
+│   ├── utils
+│   │   ├── env_setup.py
+│   │   ├── llm_judge_old.py
+│   │   ├── llm_judge.py
+│   │   ├── llm_manager.py
+│   │   ├── local_llm_wrapper.py
+│   └── white_agent_mcp_memory.py
+├── readme.md
+└── requirements.txt
+
 ```
 
 ## Key Features
@@ -271,74 +289,7 @@ finance-agent-benchmark/
 
 ## Evaluation Metrics
 
-- **Primary Metric**: Match accuracy on answer in the dataset. 
-- **Secondary Metrics**:
-  - Tool call efficiency (calls per question)
-  - Response time per question
-  - Tool success rate
-
-## Development
-
-### Adding New Tools
-
-1. Create tool implementation in `app/tools/`:
-```python
-# app/tools/my_tool.py
-async def my_tool(param: str) -> dict:
-    # Tool implementation
-    return {"result": "data"}
-```
-
-2. Register in Green Agent MCP server:
-```python
-# In green_agent_mcp_a2a.py
-@self.mcp.tool()
-async def my_tool_handler(param: str) -> dict:
-    """Tool description for LLM"""
-    return await my_tool(param)
-```
-
-3. Tool is automatically discoverable by White Agent!
-
-### Testing Tools
-
-```bash
-# Run tool test suite
-cd app
-python test_tools.py
-
-# Tests each tool individually and verifies MCP integration
-```
-
-## Deployment
-
-### Docker Hub
-
-```bash
-# Tag and push
-docker tag finance-agent-benchmark your-dockerhub/finance-agent-benchmark
-docker push your-dockerhub/finance-agent-benchmark
-```
-
-### Cloud Deployment (Nebius/AWS/GCP)
-
-```bash
-# Pull and run on cloud VM
-docker pull your-dockerhub/finance-agent-benchmark
-docker run -d \
-  -p 9000:9000 -p 9001:9001 -p 8000:8000 \
-  -e LLM_API_KEY=your_key \
-  --restart unless-stopped \
-  your-dockerhub/finance-agent-benchmark
-```
-
-### AgentBeats Platform
-
-1. Deploy agents to cloud with public endpoints
-2. Register on [agentbeats.ai](https://agentbeats.ai)
-3. Submit agent URLs:
-   - Green Agent: `https://your-domain.com/green`
-   - MCP Endpoint: `https://your-domain.com/green/mcp`
+Match the answers rubrics that is on the dataset semantically. These rubrics are different based on each question category and steps to answer a particular question.
 
 ## References
 
@@ -347,6 +298,8 @@ docker run -d \
 - **AgentBeats**: [github.com/agentbeats](https://github.com/agentbeats)
 - **MCP Specification**: [modelcontextprotocol.io](https://modelcontextprotocol.io)
 - **A2A Protocol**: [Google A2A Announcement](https://developers.google.com/a2a)
+- **Edgar APIs**: [SEC.gov APIs](https://www.sec.gov/search-filings/edgar-application-programming-interfaces)
+- **agent Beates Docs**: [Berkeley RDI platform](https://docs.agentbeats.org/)
 
 ## Contributing
 
@@ -364,9 +317,9 @@ MIT License - See LICENSE file for details
 
 ## Contact
 
-- **Course**: UC Berkeley Agentic AI
-- **Assignment**: Finance Agent Benchmark Enhancement
-- **Framework**: AgentBeats Integration
+- Fabio - inphlection@gmail.com
+- Kiarash - kiarash996@gmail.com
+- Milad - milad.eslamzadeh@teleperformance.com
 
 ---
 
