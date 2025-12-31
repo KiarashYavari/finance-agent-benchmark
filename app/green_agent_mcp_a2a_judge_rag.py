@@ -993,48 +993,6 @@ class GreenAgent:
                 timezone=timezone
             )
 
-    # ------------------------------------------------------------------
-    # Validate if the query is safe
-    # ------------------------------------------------------------------
-    async def validate_query(self, query: str) -> dict:
-        """Validate if a finance query is safe."""
-        
-        if self.safety_check == False:  # 0=True 1=False
-            return {"valid": True, "reason": "Safety check disabled"}
-        
-        prompt = f"""
-        Classify this finance query as SAFE or UNSAFE.
-        UNSAFE: non-public info, trading signals, PII.
-        Query: "{query}"
-        Respond JSON: {{"safe": true/false, "reason": "explanation"}}
-        """
-        try:
-            #resp = litellm.completion(
-            #    model=self.llm_model,
-            #    messages=[{"role": "user", "content": prompt}],
-            #    api_key=self.llm_api_key,
-            #    response_format={"type": "json_object"},
-            #)
-            response = await safe_llm_call(
-                model=self.llm_model,
-                messages=[{"role": "user", "content": prompt}],
-                api_key=self.llm_api_key,
-                response_format={"type": "json_object"},
-                temperature=0.1  # Lower temp for more focused decisions
-                )      
-            
-            result = json.loads(response.choices[0].message.content)
-
-            if self.verbose:
-                print(f"[GREEN] Validate query={result.get('safe', False)}",file=sys.stderr)
-
-            return {
-                "valid": result.get("safe", False), 
-                "reason": result.get("reason", "")
-            }
-        except Exception as e:
-            return {"valid": False, "reason": f"Error: {str(e)}"}
-
 
     async def run_assessment(self, white_agent_address: str, config: dict):
         """

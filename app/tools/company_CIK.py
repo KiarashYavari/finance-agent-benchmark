@@ -11,12 +11,6 @@ import os
 import sys
 from typing import Optional, Tuple
 
-# SEC headers
-# SEC_HEADERS = {
-#     "User-Agent": "KiarashAI/1.0 (kiarash996@yahoo.com)",
-#     "Accept": "application/json",
-# }
-
 def get_env_var(key: str) -> str:
     value = os.getenv(key)
     if not value:
