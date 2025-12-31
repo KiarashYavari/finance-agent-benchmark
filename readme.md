@@ -15,13 +15,6 @@ This project enhances the original [Vals.ai Finance-Agent-Benchmark](https://www
 - **MCP (Model Context Protocol)**: Dynamic tool discovery and execution
 - **Green/White Agent Architecture**: Evaluator and executor pattern
 
-## Project Goals
-
-1. **Adapt** the original `run_agent.py` script and its 4 tools
-2. **Integrate** with AgentBeats using A2A protocol for agent communication
-3. **Expose** tools dynamically via MCP for the white agent to discover
-4. **Evaluate** financial question-answering capabilities on a Financial Dataset
-
 ## Architecture
 
 ```
@@ -64,10 +57,15 @@ Launcher
 
 | Tool | Description | Requirements |
 |------|-------------|--------------|
-| `google_web_search` | Web search via SerpAPI | `SERP_API_KEY` |
-| `edgar_search` | SEC EDGAR filings search | `SEC_API_KEY` |
-| `parse_html_page` | Parse and chunk HTML documents | None |
-| `retrieve_information` | Query extracted text with LLM | `LLM_API_KEY` |
+| `company CIK resolver` | get company CIK based on the company name | `setup the user and email in env` |
+| `xbrl company facts` | returns all the company concepts data for a company | `setup the user and email in env` |
+| `xbrl company concept` | returns all the XBRL disclosures from a single company (CIK) and concept (a taxonomy and tag) into a single JSON file, with a separate array of facts for each units on measure that the company has chosen to disclose | `setup the user and email in env` |
+| `xbrl frames` | The xbrl/frames API returns the most recent filed fact per entity for a requested time period | `setup the user and email in env` |
+| `sec search rag` | Local Rag that fetch submissions(10-K, 10-Q, 8-K, DEF-14A), embed and save them to answer relative questions | `setup the required env var` |
+| `yfinance` | Helper tool to calculate financial metrics | `setup the required env var` |
+| `get today date` | Helper tool that helps LLMs understand latest data | `setup the required env var` |
+
+some APIs resource: https://www.sec.gov/search-filings/edgar-application-programming-interfaces
 
 ## AgentBeats Integration
 
