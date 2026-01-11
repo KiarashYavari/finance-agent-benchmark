@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 
-echo "Starting Finance-Agent-Benchmark launcher..."
+export HOST=0.0.0.0
+export AGENT_PORT=${PORT:-8080}   # Cloud Run's port becomes the agent's port
 
-exec python launcher.py
+echo "Starting Finance-Agent-Benchmark launcher on $HOST:$AGENT_PORT..."
+exec agentbeats run_ctrl
