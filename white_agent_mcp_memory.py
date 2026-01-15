@@ -191,7 +191,7 @@ class WhiteAgent:
         self.llm_api_key = os.getenv("LLM_API_KEY")
 
         # Check if we should use local LLM
-        self.llm_use_local = bool(int(os.getenv("USE_LOCAL_LLM_WHITE", "1")))
+        self.llm_use_local = bool(int(os.getenv("USE_LOCAL_LLM_WHITE", "0")))
 
         self.max_iterations = int(os.getenv("WHITE_AGENT_MAX_ITER", 6))
         
@@ -463,8 +463,8 @@ class WhiteAgent:
                                 print(f"[WHITE] Result preview: {str(result_data)[:5000]}...", file=sys.stderr)
                                 
                                 # Log result
-                                self.log_result({"tool_result": result_data})
-                                self.log_separator()
+                                # self.log_result({"tool_result": result_data})
+                                # self.log_separator()
 
                                 # Check if tool call failed
                                 if isinstance(result_data, dict) and result_data.get("error"):

@@ -75,7 +75,7 @@ class GreenAgent:
         self.llm_model         = os.getenv("LLM_MODEL", "gemini/gemini-2.5-flash-lite")
         self.llm_api_key       = os.getenv("LLM_API_KEY")
         self.use_local_llm_rag = bool(int(os.getenv("USE_LOCAL_LLM_RAG", 1))) # 1=True 0=False
-        self.use_local_llm_gpu = bool(int(os.getenv("USE_LOCAL_LLM_GPU", 1))) # 1=True 0=False
+        self.use_local_llm_gpu = bool(int(os.getenv("USE_LOCAL_LLM_GPU", 0))) # 1=True 0=False
 
         self.dataset_path = os.getenv("DATASET", "data/public.csv")
         self.use_disk_cache = bool(int(os.getenv("USE_DISK_CACHE", 1)))  # 1=True 0=False - Save SEC filings to disk.
@@ -1003,15 +1003,15 @@ class GreenAgent:
                     "mcp_url": mcp_url
                 }
                 
-                # Call validation, if configured in the env file. 
-                if self.safety_check == 0:  # 0=True 1=False
-                    validation = await self.validate_query(question)
+                # # Call validation, if configured in the env file. 
+                # if self.safety_check == 0:  # 0=True 1=False
+                #     validation = await self.validate_query(question)
                 
-                    if not validation.get("valid", False):
-                        print(f"[GREEN] Question {idx} considered unsafe, skipping it...",file=sys.stderr)
-                        continue
-                else:
-                    print(f"[GREEN] Skipping safety check...",file=sys.stderr)
+                #     if not validation.get("valid", False):
+                #         print(f"[GREEN] Question {idx} considered unsafe, skipping it...",file=sys.stderr)
+                #         continue
+                # else:
+                #     print(f"[GREEN] Skipping safety check...",file=sys.stderr)
                 
                 
                 
@@ -1087,7 +1087,7 @@ class GreenAgent:
         avg_score = sum(r["score"] for r in results) / len(results) if results else 0.0
         accuracy = correct_count_total / len(results) if results else 0.0
         
-        filename = self.save_to_csv("eval_result.csv")
+        # filename = self.save_to_csv("eval_result.csv")
         
         print(f"\n[GREEN] ═══════════════════════════════")
         print(f"[GREEN] Assessment Complete!")
@@ -1095,7 +1095,7 @@ class GreenAgent:
         print(f"[GREEN] Average Score: {avg_score:.3f}")
         print(f"[GREEN] Next task will start at index: {self.current_task_index}")
         print(f"[GREEN] Dataset: {self.dataset_path}")
-        print(f"[GREEN] Result saved to file: {filename}")
+        # print(f"[GREEN] Result saved to file: {filename}")
         print(f"[GREEN] ═══════════════════════════════")
         
         return {
