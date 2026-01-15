@@ -76,6 +76,11 @@ def start_white_agent(host: str, port: int):
 async def async_main():
     secret_env="secrets/secrets.env"
     parser = argparse.ArgumentParser(description="Local sim for Finance-Agent-Benchmark on AgentBeats")
+    # AgentBeats-required flags
+    parser.add_argument("--host", type=str, default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=9000)
+    parser.add_argument("--card-url", type=str)
+    
     parser.add_argument("--num_tasks", 
                         type=int, default=1, 
                         help="Number of tasks")
