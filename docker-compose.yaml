@@ -4,14 +4,31 @@ services:
   finance-agent:
     build: .
     image: finance-agent-benchmark:latest
-    env_file:
-      - secrets/secrets.env
+
+    # Mount dataset (host → container)
+    volumes:
+      - ./data:/app/data:ro
+      - ./tools/models:/app/tools/models:ro
+
     environment:
-      HOST: 0.0.0.0
+      # Required by AgentBeats / launcher
+      HOST: 127.0.0.1
       AGENT_PORT: 9000
-      DEBUG: "false"
+      DEBUG: "true"
+      NUM_TASKS: 1
+      YOUR_NAME: "AI NOOBS"
+      EMAIL_ADDRESS: "ai.noobs.2025@gmail.com"
+
+      # Explicit dataset path (Docker-safe)
+      DATASET: /app/data/public.csv
+
+      # Secrets MUST be injected at runtime (example)
+      LLM_API_KEY: ${LLM_API_KEY}
+
     ports:
       - "9000:9000"
       - "9001:9001"
       - "8000:8000"
+
     restart: unless-stopped
+
