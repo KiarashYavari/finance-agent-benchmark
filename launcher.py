@@ -77,7 +77,7 @@ async def async_main():
     secret_env="secrets/secrets.env"
     parser = argparse.ArgumentParser(description="Local sim for Finance-Agent-Benchmark on AgentBeats")
     parser.add_argument("--num_tasks", 
-                        type=int, default=5, 
+                        type=int, default=1, 
                         help="Number of tasks")
     parser.add_argument("--env", 
                         type=str, default=secret_env, 
@@ -93,7 +93,7 @@ async def async_main():
             raise Exception(f"[LAUNCHER] Errno 2: File [{args.env}] not found.")
 
     # ---- Configuration ----
-    Debug = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
+    Debug = os.getenv("DEBUG", "ture").lower() in ("1", "true", "yes")
     if Debug:
         GREEN_HOST = os.getenv("GREEN_AGENT_HOST", "127.0.0.1")
         GREEN_PORT = int(os.getenv("GREEN_AGENT_PORT", 9000))
