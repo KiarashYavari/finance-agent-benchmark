@@ -23,5 +23,7 @@ RUN chmod +x run.sh run_launcher.sh kill_agentbeats.sh
 RUN useradd -m appuser
 USER appuser
 
+ENTRYPOINT ["python", "launcher.py"]
+
 # 🚀 This is the key change
 CMD ["python", "launcher.py"]
