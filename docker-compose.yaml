@@ -18,6 +18,7 @@ services:
       - ./secrets/secrets.env:/app/secrets/secrets.env:ro
       # Writable cache for RAG and SEC downloads
       - ./cache:/app/cache
+      # add task data volume
       - ./data:/app/data:ro
 
     environment:
