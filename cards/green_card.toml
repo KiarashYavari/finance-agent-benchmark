@@ -4,7 +4,7 @@ A2A orchestrator for the Kaggle Financial-QA-10k benchmark.
 Hosts MCP server exposing financial tools (Google search, EDGAR, HTML parsing).
 Evaluates white agent on 7,000 SEC 10-K questions.
 '''
-url = "http://127.0.0.1:9000"
+url = "http://127.0.0.1:9009"
 version = "1.0.0"
 
 defaultInputModes = ["text"]
@@ -26,3 +26,6 @@ name = "Benchmark Evaluator"
 description = "Runs evaluation on Kaggle Financial-QA-10k dataset, computes exact-match accuracy."
 tags = ["evaluation", "accuracy", "benchmark"]
 examples = ["Run 7000 QA tasks and return accuracy metric."]
+
+[transports.jsonrpc]
+url = "http://green-agent:9009/a2a"

@@ -8,7 +8,7 @@ services:
 
     # Expose green agent port
     ports:
-      - "9000:9000"
+      - "9009:9009"
 
     # Mount models, secrets, and cache directories
     volumes:
@@ -24,7 +24,7 @@ services:
     environment:
       # Green agent host and port
       GREEN_AGENT_HOST: "0.0.0.0"
-      GREEN_AGENT_PORT: 9000
+      GREEN_AGENT_PORT: 9009
 
       # Path to secrets (optional, used inside agent)
       SECRETS_ENV_PATH: "/app/secrets/secrets.env"
