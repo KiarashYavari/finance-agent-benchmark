@@ -4,6 +4,7 @@ Finance-Green Agent for AgentBeats
 A2A + MCP server with proper /reset support
 """
 #agentbeats/app
+import argparse
 import asyncio
 import os
 import sys
@@ -16,6 +17,12 @@ import litellm
 import httpx
 import tomllib
 from typing import Optional, List
+
+# a2a imports
+from a2a.server.request_handlers import RequestHandler
+from a2a.server.apps import A2AStarletteApplication
+from a2a.types import AgentCard
+
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -49,10 +56,10 @@ class GreenAgent:
         self.debug = os.getenv("DEBUG", "false").lower() in ("1", "true", "yes")
         if self.debug:
             self.agent_host = os.getenv("GREEN_AGENT_HOST", "127.0.0.1")
-            self.agent_port = int(os.getenv("GREEN_AGENT_PORT", 9000))
+            self.agent_port = int(os.getenv("GREEN_AGENT_PORT", 9009))
         else:
             self.agent_host = os.getenv("HOST", "0.0.0.0")
-            self.agent_port = int(os.getenv("AGENT_PORT", 9000))
+            self.agent_port = int(os.getenv("AGENT_PORT", 9009))
         self.mcp_port = int(os.getenv("MCP_PORT", 9001))
         self.name = "finance-green-agent"
         self.verbose = bool(int(os.getenv("VERBOSE", 1))) # 1=True 0=False 
@@ -93,12 +100,34 @@ class GreenAgent:
         
         # Create FastAPI app for A2A
         self.app = FastAPI(title="Finance Green Agent")
+        # -------------------------
+        # A2A JSON-RPC application
+        # -------------------------
+        agent_card = AgentCard(**self.agent_card)
+        request_handler = RequestHandler()
         
+        self.a2a_app = A2AStarletteApplication(
+            agent_card=agent_card,
+            request_handler=request_handler,
+        )
+
+        # Register A2A method
+        @self.a2a_app.method("run_assessment")
+        async def run_assessment_a2a(**kwargs):
+            return await self.run_assessment(
+                white_agent_address=kwargs.get("white_address"),
+                config=kwargs,
+            )
+
+        # Mount A2A at root (AgentBeats expects this)
+        self.app.mount("/", self.a2a_app)
+
+                
         # Create FastMCP server for tools
         self.mcp_server = FastMCP("finance-tools")
         
         # Setup routes and tools
-        self._setup_a2a_routes()
+        # self._setup_a2a_routes()
         self._register_mcp_tools()
 
     def _load_dataset(self):
@@ -134,72 +163,37 @@ class GreenAgent:
             "dataset_size": len(self.dataset_df) if self.dataset_df is not None else 0,
             "current_task_index": self.current_task_index
         }
-
-    def _setup_a2a_routes(self):
-        """Setup A2A protocol endpoints"""
+    
+    # def _setup_a2a_routes(self):
+    #     """Setup A2A protocol endpoints"""
         
-        @self.app.get("/card")
-        @self.app.get("/.well-known/agent-card.json")
-        async def get_card():
-            """Return agent card"""
-            return JSONResponse(self.agent_card)
+    #     @self.app.get("/card")
+    #     @self.app.get("/.well-known/agent-card.json")
+    #     async def get_card():
+    #         """Return agent card"""
+    #         return JSONResponse(self.agent_card)
 
-        @self.app.post("/reset")
-        async def reset_agent():
-            """
-            Reset agent state (AgentBeats requirement)
-            Clears all state and restarts dataset from beginning
-            """
-            print(f"[GREEN] Resetting agent state...", file=sys.stderr)
+    #     @self.app.post("/reset")
+    #     async def reset_agent():
+    #         """
+    #         Reset agent state (AgentBeats requirement)
+    #         Clears all state and restarts dataset from beginning
+    #         """
+    #         print(f"[GREEN] Resetting agent state...", file=sys.stderr)
 
-            result = self.reset_state()
-            return JSONResponse(result)
+    #         result = self.reset_state()
+    #         return JSONResponse(result)
 
-        @self.app.get("/health")
-        async def health():
-            """Health check endpoint"""
-            return {
-                "status": "ok",
-                "agent": self.name,
-                "dataset_loaded": self.dataset_df is not None,
-                "current_task_index": self.current_task_index
-            }
+    #     @self.app.get("/health")
+    #     async def health():
+    #         """Health check endpoint"""
+    #         return {
+    #             "status": "ok",
+    #             "agent": self.name,
+    #             "dataset_loaded": self.dataset_df is not None,
+    #             "current_task_index": self.current_task_index
+    #         }
 
-        @self.app.post("/a2a")
-        async def handle_a2a_message(request: Request):
-            """Handle A2A messages from AgentBeats"""
-            try:
-                payload = await request.json()
-                
-                if self.verbose:
-                    print(f"[GREEN] Received A2A message: {payload}",file=sys.stderr)
-                
-                method = payload.get("method")
-                args = payload.get("args", {})
-                
-                if method == "run_assessment":
-                    result = await self.run_assessment(
-                        white_agent_address=args.get("white_address"),
-                        config=args
-                    )
-                    return JSONResponse({
-                        "status": "completed",
-                        "result": result
-                    })
-                else:
-                    return JSONResponse({
-                        "status": "error",
-                        "message": f"Unknown method: {method}"
-                    }, status_code=400)
-                    
-            except Exception as e:
-                print(f"[GREEN] Error handling A2A message: {e}")
-                import traceback
-                traceback.print_exc()
-                return JSONResponse({
-                    "status": "error",
-                    "message": str(e)
-                }, status_code=500)
 
     def _register_mcp_tools(self):
         """Register tools with FastMCP server"""
@@ -962,7 +956,7 @@ class GreenAgent:
         # 2. config["num_tasks"] (from AgentBeats)
         # 3. Default: process ALL remaining questions
         
-        num_tasks_override = os.getenv("NUM_TASKS_OVERRIDE", "")
+        num_tasks_override = os.getenv("NUM_TASKS_OVERRIDE", "1")
         
         if num_tasks_override:
             # Testing mode: explicit number from command line
@@ -1237,6 +1231,44 @@ class GreenAgent:
         )
 
 
+# if __name__ == "__main__":
+#     agent = GreenAgent()
+#     agent.run()
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Finance Green Agent")
+
+    parser.add_argument(
+        "--host",
+        default=os.getenv("GREEN_AGENT_HOST", "0.0.0.0"),
+        help="Host to bind the A2A server"
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.getenv("GREEN_AGENT_PORT", 9009)),
+        help="Port for the A2A server"
+    )
+    parser.add_argument(
+        "--mcp-port",
+        type=int,
+        default=int(os.getenv("MCP_PORT", 9001)),
+        help="Port for the MCP server"
+    )
+    
+    parser.add_argument(
+        "--card-url",
+        type=str,
+        help="Public URL where this agent's card is served"
+    )
+
+    args = parser.parse_args()
+
     agent = GreenAgent()
+
+    # 🔥 override values BEFORE run()
+    agent.agent_host = args.host
+    agent.agent_port = args.port
+    agent.mcp_port = args.mcp_port
+
     agent.run()
+
