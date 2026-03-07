@@ -11,7 +11,6 @@
 # src/server.py
 
 # src/server.py
-
 import os
 import argparse
 import asyncio
@@ -19,11 +18,19 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
+
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import RequestHandler
-from fastmcp import FastMCP
+
+from a2a.types import (
+    MessageSendParams,
+    Message,
+    Task,
+    TaskStatus,
+)
 
 from src.executer import Executer
+from fastmcp import FastMCP
 
 
 # ============================================================
@@ -35,39 +42,53 @@ class GreenRequestHandler(RequestHandler):
     def __init__(self, executer: Executer):
         self.executer = executer
 
-    async def rpc_discover(self):
-        return {
-            "name": "finance-green-agent",
-            "description": "Evaluates white agent performance.",
-            "methods": [
-                {
-                    "name": "run_assessment",
-                    "description": "Run evaluation tasks on a white agent.",
-                    "params": {
-                        "white_address": "string",
-                        "num_tasks": "integer"
-                    }
-                }
-            ]
-        }
+    async def on_message_send(self, params: MessageSendParams, context=None):
 
-    async def rpc_call(self, method: str, params: dict):
+        # Extract message content
+        message_text = params.message.content
 
-        if method == "run_assessment":
+        # Example expected format
+        # { "white_address": "...", "num_tasks": 3 }
 
-            white_address = params.get("white_address")
-            num_tasks = params.get("num_tasks", 1)
+        white_address = message_text.get("white_address")
+        num_tasks = message_text.get("num_tasks", 1)
 
-            if not white_address:
-                raise ValueError("white_address is required")
+        result = await self.executer.run_assessment(
+            white_address=white_address,
+            num_tasks=num_tasks
+        )
 
-            return await self.executer.run_assessment(
-                white_address=white_address,
-                num_tasks=num_tasks
-            )
+        return Message(
+            role="assistant",
+            content=result
+        )
+    
+    async def on_get_task(self, params, context=None):
+        return None
 
-        raise ValueError(f"Unknown method: {method}")
 
+    async def on_cancel_task(self, params, context=None):
+        return None
+
+
+    async def on_set_task_push_notification_config(self, params, context=None):
+        return params
+
+
+    async def on_get_task_push_notification_config(self, params, context=None):
+        return None
+
+
+    async def on_list_task_push_notification_config(self, params, context=None):
+        return []
+
+
+    async def on_delete_task_push_notification_config(self, params, context=None):
+        return None
+
+
+    async def on_resubscribe_to_task(self, params, context=None):
+        raise ServerError(error=UnsupportedOperationError())
 
 # ============================================================
 # GreenAgent Wrapper (AgentBeats Compatible)
@@ -76,14 +97,12 @@ class GreenRequestHandler(RequestHandler):
 class GreenAgent:
 
     def __init__(self):
-
-        # These will be overridden by CLI
-        self.agent_host = os.getenv("GREEN_AGENT_HOST", "0.0.0.0")
-        self.agent_port = int(os.getenv("GREEN_AGENT_PORT", 9009))
-        self.mcp_port = int(os.getenv("MCP_PORT", 9001))
+        self.agent_host = "0.0.0.0"
+        self.agent_port = 9009
+        self.mcp_port = 9001
         self.card_url = None
 
-    def _create_mcp(self):
+    def create_mcp(self):
 
         mcp = FastMCP("finance-tools")
 
@@ -93,14 +112,15 @@ class GreenAgent:
 
         return mcp
 
-    def _create_app(self):
+    def create_app(self):
 
         executer = Executer(
             mcp_url=f"http://{self.agent_host}:{self.mcp_port}"
         )
 
         handler = GreenRequestHandler(executer)
-        mcp = self._create_mcp()
+
+        mcp = self.create_mcp()
 
         @asynccontextmanager
         async def lifespan(app: FastAPI):
@@ -113,27 +133,18 @@ class GreenAgent:
                 )
             )
 
-            print(f"[MCP] Running on {self.agent_host}:{self.mcp_port}")
-            print(f"[A2A] Running on {self.agent_host}:{self.agent_port}")
+            print(f"A2A running on {self.agent_host}:{self.agent_port}")
+            print(f"MCP running on {self.agent_host}:{self.mcp_port}")
 
             yield
 
             mcp_task.cancel()
-            try:
-                await mcp_task
-            except asyncio.CancelledError:
-                pass
 
-            print("[Shutdown] MCP stopped")
-
-        app = FastAPI(
-            title="Finance Green Agent",
-            lifespan=lifespan
-        )
+        app = FastAPI(lifespan=lifespan)
 
         a2a_app = A2AStarletteApplication(
             request_handler=handler,
-            card_url=self.card_url  # Important for AgentBeats
+            card_url=self.card_url,
         )
 
         app.mount("/", a2a_app)
@@ -142,7 +153,7 @@ class GreenAgent:
 
     def run(self):
 
-        app = self._create_app()
+        app = self.create_app()
 
         uvicorn.run(
             app,
