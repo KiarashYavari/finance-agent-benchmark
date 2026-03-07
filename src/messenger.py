@@ -16,12 +16,17 @@ class Messenger:
 
         payload = {
             "jsonrpc": "2.0",
-            "method": "answer_question",  # must match white agent method
+            "id": str(uuid.uuid4()),
+            "method": "message/send", # must match white agent method
             "params": {
-                "question": question,
-                "mcp_url": self.mcp_url
+                "message": {
+                    "role": "user",
+                    "content": {
+                        "question": question,
+                        "mcp_url": self.mcp_url,
+                    },
+                }
             },
-            "id": request_id
         }
 
         async with httpx.AsyncClient(timeout=200.0) as client:
