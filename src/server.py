@@ -31,6 +31,7 @@ from a2a.types import (
 
 from src.executer import Executer
 from fastmcp import FastMCP
+from src.mcp_tools import register_mcp_tools
 
 
 # ============================================================
@@ -105,10 +106,10 @@ class GreenAgent:
     def create_mcp(self):
 
         mcp = FastMCP("finance-tools")
-
-        @mcp.tool()
-        async def health_check():
-            return {"status": "ok"}
+        register_mcp_tools(mcp)
+        # @mcp.tool()
+        # async def health_check():
+        #     return {"status": "ok"}
 
         return mcp
 
