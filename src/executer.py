@@ -8,12 +8,17 @@ from src.messenger import Messenger
 
 class Executer:
 
-    def __init__(self):
+    def __init__(self, mcp_url: str | None = None):
         dataset = os.getenv("DATASET", "data/public.csv")
         host = os.getenv("HOST", "0.0.0.0")
         mcp_port = os.getenv("MCP_PORT", "9001")
 
-        self.mcp_url = f"http://{host}:{mcp_port}"
+        if mcp_url is None:
+            host = os.getenv("HOST", "0.0.0.0")
+            mcp_port = os.getenv("MCP_PORT", "9001")
+            mcp_url = f"http://{host}:{mcp_port}"
+
+        self.mcp_url = mcp_url
 
         self.agent = GreenAgent(dataset_path=dataset)
         self.messenger = Messenger(self.mcp_url)
