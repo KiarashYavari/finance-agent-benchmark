@@ -10,11 +10,12 @@
 
 # src/server.py
 
-# src/server.py
 import os
 import argparse
 import asyncio
 from contextlib import asynccontextmanager
+from typing import AsyncGenerator
+import json
 
 import uvicorn
 from fastapi import FastAPI
@@ -27,7 +28,12 @@ from a2a.types import (
     Message,
     Task,
     TaskStatus,
+    UnsupportedOperationError,
+    AgentCard,
+    AgentCapabilities,
+    AgentSkill
 )
+from a2a.utils.errors import ServerError
 
 from src.executer import Executer
 from fastmcp import FastMCP
@@ -45,14 +51,16 @@ class GreenRequestHandler(RequestHandler):
 
     async def on_message_send(self, params: MessageSendParams, context=None):
 
+        part = params.message.parts[0].root
+        text = part.text
         # Extract message content
-        message_text = params.message.content
+        payload = json.loads(text)
 
         # Example expected format
         # { "white_address": "...", "num_tasks": 3 }
 
-        white_address = message_text.get("white_address")
-        num_tasks = message_text.get("num_tasks", 1)
+        white_address = payload["white_address"]
+        num_tasks = payload.get("num_tasks", 1)
 
         result = await self.executer.run_assessment(
             white_address=white_address,
@@ -63,6 +71,15 @@ class GreenRequestHandler(RequestHandler):
             role="assistant",
             content=result
         )
+        
+    # Required by abstract base class
+    async def on_message_send_stream(
+        self,
+        params,
+        context=None
+    ) -> AsyncGenerator:
+
+        raise ServerError(error=UnsupportedOperationError())
     
     async def on_get_task(self, params, context=None):
         return None
@@ -102,6 +119,40 @@ class GreenAgent:
         self.agent_port = 9009
         self.mcp_port = 9001
         self.card_url = None
+        
+
+
+    def create_agent_card(self):
+
+        skill = AgentSkill(
+            id="finance-analysis",
+            name="Finance Analysis",
+            description="Analyze financial filings using MCP tools",
+            input_modes=["text/plain"],
+            output_modes=["text/plain"],
+            tags = ["AI Benchmark", "Evaluating", "mcp", "finance", "tool calling"]
+        )
+
+        return AgentCard(
+            name="Green Finance Agent",
+            description="Finance benchmark agent",
+            version="1.0.0",
+
+            # REQUIRED
+            url=self.card_url or f"http://localhost:{self.agent_port}/a2a",
+
+            # REQUIRED
+            default_input_modes=["application/json"],
+            default_output_modes=["application/json"],
+
+            capabilities=AgentCapabilities(
+                streaming=False,
+                push_notifications=False
+            ),
+
+            # REQUIRED
+            skills=[skill]
+        )
 
     def create_mcp(self):
 
@@ -116,7 +167,7 @@ class GreenAgent:
     def create_app(self):
 
         executer = Executer(
-            mcp_url=f"http://{self.agent_host}:{self.mcp_port}"
+            mcp_url=f"http://localhost:{self.mcp_port}"
         )
 
         handler = GreenRequestHandler(executer)
@@ -141,14 +192,16 @@ class GreenAgent:
 
             mcp_task.cancel()
 
+        # create base app
         app = FastAPI(lifespan=lifespan)
-
+        agent_card = self.create_agent_card()
+        
         a2a_app = A2AStarletteApplication(
-            request_handler=handler,
-            card_url=self.card_url,
+            agent_card = agent_card,
+            http_handler=handler,
         )
 
-        app.mount("/", a2a_app)
+        a2a_app.add_routes_to_app(app)
 
         return app
 
