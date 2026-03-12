@@ -25,7 +25,7 @@ def register_mcp_tools(mcp_server):
     # use_local_llm_gpu = self.use_local_llm_gpu
 
 
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def sec_search_handler(
         question: str,
         company_name: str = None,
@@ -318,7 +318,7 @@ def register_mcp_tools(mcp_server):
 
 
     # company_name to CIK resolver
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def cik_resolver_handler(company_name: str) -> dict:
         """Resolve company name to CIK using official SEC ticker mapping."""
 
@@ -333,7 +333,7 @@ def register_mcp_tools(mcp_server):
     # --------------------------
     # fetch xbrl company facts
     # --------------------------
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def companyfacts_handler(cik: int) -> dict:
         """
         Fetches all XBRL facts for a company (identified by CIK) in a single API call using the SEC companyfacts endpoint.
@@ -374,7 +374,7 @@ def register_mcp_tools(mcp_server):
     # ---------------------------
     # fetch xbrl company concepts
     # ---------------------------
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def xbrl_companyconcept_handler(
     cik: int,
     taxonomy: str,
@@ -420,7 +420,7 @@ def register_mcp_tools(mcp_server):
     # --------------------------
     # fetch xbrl frames
     # --------------------------
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def frames_handler(
         taxonomy: str,
         concept: str,
@@ -464,7 +464,7 @@ def register_mcp_tools(mcp_server):
     # ------------------------------------------------------------
     # Ticker Lookup (helps white agent use yfinance tools)
     # ------------------------------------------------------------
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def get_ticker_symbol_handler(
         company_name: str
     ) -> dict:
@@ -540,7 +540,7 @@ def register_mcp_tools(mcp_server):
             # ========== NEW: YFINANCE TOOLS ==========        
     
     # ========== YFINANCE TOOLS: financial metric ==========             
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def get_financial_metrics_handler(
         ticker: str,
         metrics: list = None,
@@ -640,7 +640,7 @@ def register_mcp_tools(mcp_server):
             return {"error": f"YFinance error: {str(e)}"}
     
     
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def get_financial_ratios_handler(
         ticker: str,
         ratios: list = None,
@@ -714,7 +714,7 @@ def register_mcp_tools(mcp_server):
     # ------------------------------------------------------------------
     # Get Today's Date
     # ------------------------------------------------------------------
-    @self.mcp_server.tool()
+    @mcp_server.tool()
     async def get_today_date_handler(
         format: str = "iso",  # ✅ Changed from date_format to format
         timezone: str = "UTC"
