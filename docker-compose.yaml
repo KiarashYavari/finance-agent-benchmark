@@ -1,35 +1,31 @@
 version: "3.9"
 
 services:
-  green-agent:
-    image: finance-green-agent:latest
-    build: .
-    container_name: green-agent
 
-    # Expose green agent port
+  finance-agent:
+    build: .
+    image: finance-agent:latest
+    container_name: finance-agent
+
     ports:
       - "9009:9009"
 
-    # Mount models, secrets, and cache directories
-    volumes:
-      # Read-only models
-      - ./tools/models:/app/models:ro
-      # Secrets/env (read-only)
-      - ./secrets/secrets.env:/app/secrets/secrets.env:ro
-      # Writable cache for RAG and SEC downloads
-      - ./cache:/app/cache
-      # add task data volume
-      - ./data:/app/data:ro
+    env_file:
+      - ./secrets/secrets.env
 
     environment:
-      # Green agent host and port
       GREEN_AGENT_HOST: "0.0.0.0"
-      GREEN_AGENT_PORT: 9009
-
-      # Path to secrets (optional, used inside agent)
-      SECRETS_ENV_PATH: "/app/secrets/secrets.env"
-
-      # Optional: dataset if needed by green agent
+      GREEN_AGENT_PORT: "9009"
       DATASET: "/app/data/public.csv"
+
+    volumes:
+      # dataset
+      - ./data:/app/data:ro
+
+      # models (LLM GGUF)
+      - ./tools/models:/app/tools/models:ro
+
+      # runtime cache
+      - ./cache:/app/cache
 
     restart: unless-stopped
