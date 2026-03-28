@@ -23,9 +23,11 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY src/ ./src/
 COPY utils/ ./utils/
 COPY tools/ ./tools/
+# Copy dataset into image
+COPY data/ ./data/
 
 # Create runtime directories
 RUN mkdir -p /app/cache
 
 # Default command (same as your local run)
-CMD ["python", "-m", "src.server"]
+ENTRYPOINT ["python", "-m", "src.server"]
