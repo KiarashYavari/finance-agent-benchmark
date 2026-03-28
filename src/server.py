@@ -54,13 +54,25 @@ class GreenRequestHandler(RequestHandler):
         part = params.message.parts[0].root
         text = part.text
         # Extract message content
-        payload = json.loads(text)
-
-        # Example expected format
-        # { "white_address": "...", "num_tasks": 3 }
-
-        white_address = payload["white_address"]
+        # Try parsing JSON safely
+        try:
+            payload = json.loads(text)
+        except Exception:
+            payload = {}
+         
+        # white address is missing- there is a good chance it that comes from configuration
+        # review the latest conversation on this topic with GPT-> rebuild docker images   
+        # Extract safely
+        white_address = payload.get("white_address")
         num_tasks = payload.get("num_tasks", 1)
+        
+        # Fallback if missing (VERY IMPORTANT)
+        if not white_address:
+            # Option 1: extract from context
+            white_address = context.get("white_address") if context else None
+
+        if not white_address:
+            raise ValueError(f"Missing white_address. Payload received: {text}")
 
         result = await self.executer.run_assessment(
             white_address=white_address,
