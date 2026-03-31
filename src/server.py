@@ -67,10 +67,11 @@ class GreenRequestHandler(RequestHandler):
         num_tasks = payload.get("num_tasks", 1)
         
         # Fallback if missing (VERY IMPORTANT)
+        # Option 1: extract from context
+        white_address = getattr(context, "white_address", None) if context else None
+        
         if not white_address:
-            # Option 1: extract from context
-            white_address = context.get("white_address") if context else None
-
+            white_address = os.getenv("WHITE_ADDRESS", "http://finance-purple-agent:9009")
         if not white_address:
             raise ValueError(f"Missing white_address. Payload received: {text}")
 
