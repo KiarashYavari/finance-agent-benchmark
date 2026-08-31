@@ -3,7 +3,7 @@
 
 import httpx
 import uuid
-
+import json
 
 class Messenger:
 
@@ -12,27 +12,35 @@ class Messenger:
 
     async def ask_white_agent(self, white_address: str, question: str):
 
-        request_id = str(uuid.uuid4())
+        payload_text = json.dumps(
+            {
+                "question": question,
+                "mcp_url": self.mcp_url,
+            }
+        )
 
-        payload = {
+        request_payload = {
             "jsonrpc": "2.0",
             "id": str(uuid.uuid4()),
-            "method": "message/send", # must match white agent method
+            "method": "message/send",
             "params": {
                 "message": {
+                    "messageId": str(uuid.uuid4()),
                     "role": "user",
-                    "content": {
-                        "question": question,
-                        "mcp_url": self.mcp_url,
-                    },
+                    "parts": [
+                        {
+                            "kind": "text",
+                            "text": payload_text,
+                        }
+                    ],
                 }
             },
         }
-
+        
         async with httpx.AsyncClient(timeout=200.0) as client:
             response = await client.post(
-                f"{white_address}/a2a",
-                json=payload,
+                white_address.rstrip("/"),
+                json=request_payload,
             )
             response.raise_for_status()
 
