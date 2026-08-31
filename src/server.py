@@ -16,6 +16,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 import json
+import uuid
 
 import uvicorn
 from fastapi import FastAPI
@@ -31,8 +32,13 @@ from a2a.types import (
     UnsupportedOperationError,
     AgentCard,
     AgentCapabilities,
-    AgentSkill
+    AgentSkill,
+    Part,
+    TextPart
 )
+
+
+
 from a2a.utils.errors import ServerError
 
 from src.executer import Executer
@@ -68,10 +74,13 @@ class GreenRequestHandler(RequestHandler):
         
         # Fallback if missing (VERY IMPORTANT)
         # Option 1: extract from context
-        white_address = getattr(context, "white_address", None) if context else None
         
+        if not white_address and context:
+            white_address = getattr(context, "white_address", None)
+
         if not white_address:
             white_address = os.getenv("WHITE_ADDRESS", "http://finance-purple-agent:9009")
+    
         if not white_address:
             raise ValueError(f"Missing white_address. Payload received: {text}")
 
@@ -81,8 +90,16 @@ class GreenRequestHandler(RequestHandler):
         )
 
         return Message(
-            role="assistant",
-            content=result
+            messageId=str(uuid.uuid4()),
+            role="agent",
+            parts=[
+                Part(
+                    root=TextPart(
+                        kind="text",
+                        text=json.dumps(result),
+                    )
+                )
+            ],
         )
         
     # Required by abstract base class
@@ -152,8 +169,7 @@ class GreenAgent:
             version="1.0.0",
 
             # REQUIRED
-            url=self.card_url or f"http://localhost:{self.agent_port}/a2a",
-
+            url=self.card_url or f"http://localhost:{self.agent_port}/",
             # REQUIRED
             default_input_modes=["application/json"],
             default_output_modes=["application/json"],
@@ -180,7 +196,7 @@ class GreenAgent:
     def create_app(self):
 
         executer = Executer(
-            mcp_url=f"http://localhost:{self.mcp_port}"
+            mcp_url=os.getenv("MCP_URL", f"http://green-agent:{self.mcp_port}/sse")
         )
 
         handler = GreenRequestHandler(executer)
