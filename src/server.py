@@ -16,6 +16,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 import json
+import uuid
 
 import uvicorn
 from fastapi import FastAPI
@@ -28,11 +29,23 @@ from a2a.types import (
     Message,
     Task,
     TaskStatus,
-    UnsupportedOperationError,
+    TaskState,
+    Artifact,
     AgentCard,
     AgentCapabilities,
-    AgentSkill
+    AgentSkill,
+    Part,
+<<<<<<< HEAD
+    TextPart,
+    DataPart,
+    UnsupportedOperationError,
+=======
+    TextPart
+>>>>>>> ce090cb4fc21df6ac7795ecb9846c7fc987c26eb
 )
+
+
+
 from a2a.utils.errors import ServerError
 
 from src.executer import Executer
@@ -49,42 +62,129 @@ class GreenRequestHandler(RequestHandler):
     def __init__(self, executer: Executer):
         self.executer = executer
 
-    async def on_message_send(self, params: MessageSendParams, context=None):
-
+    async def on_message_send(
+        self,
+        params: MessageSendParams,
+        context=None):
+        # ----------------------------------------------------
+        # 1. Read incoming assessment request
+        # ----------------------------------------------------
         part = params.message.parts[0].root
         text = part.text
-        # Extract message content
-        # Try parsing JSON safely
+
         try:
             payload = json.loads(text)
         except Exception:
             payload = {}
-         
-        # white address is missing- there is a good chance it that comes from configuration
-        # review the latest conversation on this topic with GPT-> rebuild docker images   
-        # Extract safely
+
+        # ----------------------------------------------------
+        # 2. Resolve Purple/White agent address
+        # ----------------------------------------------------
         white_address = payload.get("white_address")
         num_tasks = payload.get("num_tasks", 1)
+<<<<<<< HEAD
+=======
         
         # Fallback if missing (VERY IMPORTANT)
         # Option 1: extract from context
-        white_address = getattr(context, "white_address", None) if context else None
         
+        if not white_address and context:
+            white_address = getattr(context, "white_address", None)
+
         if not white_address:
             white_address = os.getenv("WHITE_ADDRESS", "http://finance-purple-agent:9009")
+    
         if not white_address:
             raise ValueError(f"Missing white_address. Payload received: {text}")
+>>>>>>> ce090cb4fc21df6ac7795ecb9846c7fc987c26eb
 
+        if not white_address and context:
+            white_address = getattr(
+                context,
+                "white_address",
+                None,
+            )
+
+        if not white_address:
+            white_address = os.getenv(
+                "WHITE_ADDRESS",
+                "http://finance-purple-agent:9009",
+            )
+
+        if not white_address:
+            raise ValueError(
+                f"Missing white_address. Payload received: {text}"
+            )
+
+        # ----------------------------------------------------
+        # 3. Run assessment
+        # ----------------------------------------------------
         result = await self.executer.run_assessment(
             white_address=white_address,
-            num_tasks=num_tasks
+            num_tasks=num_tasks,
         )
 
+<<<<<<< HEAD
+        print(
+            f"[GREEN][ASSESSMENT] Result: "
+            f"{json.dumps(result)}"
+=======
         return Message(
-            role="assistant",
-            content=result
+            messageId=str(uuid.uuid4()),
+            role="agent",
+            parts=[
+                Part(
+                    root=TextPart(
+                        kind="text",
+                        text=json.dumps(result),
+                    )
+                )
+            ],
+>>>>>>> ce090cb4fc21df6ac7795ecb9846c7fc987c26eb
         )
-        
+
+        # ----------------------------------------------------
+        # 4. Create A2A task/context IDs
+        # ----------------------------------------------------
+        task_id = (
+            getattr(params.message, "taskId", None)
+            or str(uuid.uuid4())
+        )
+
+        context_id = (
+            getattr(params.message, "contextId", None)
+            or str(uuid.uuid4())
+        )
+
+        # ----------------------------------------------------
+        # 5. Put leaderboard result in an A2A Artifact
+        # ----------------------------------------------------
+        artifact = Artifact(
+            artifactId=str(uuid.uuid4()),
+            name="assessment_results",
+            description="Finance benchmark assessment results",
+            parts=[
+                Part(
+                    root=DataPart(
+                        kind="data",
+                        data=result,
+                    )
+                )
+            ],
+        )
+
+        # ----------------------------------------------------
+        # 6. Return COMPLETED Task containing the artifact
+        # ----------------------------------------------------
+        return Task(
+            id=task_id,
+            contextId=context_id,
+            status=TaskStatus(
+                state=TaskState.completed,
+            ),
+            artifacts=[artifact],
+        )
+
     # Required by abstract base class
     async def on_message_send_stream(
         self,
@@ -152,8 +252,7 @@ class GreenAgent:
             version="1.0.0",
 
             # REQUIRED
-            url=self.card_url or f"http://localhost:{self.agent_port}/a2a",
-
+            url=self.card_url or f"http://localhost:{self.agent_port}/",
             # REQUIRED
             default_input_modes=["application/json"],
             default_output_modes=["application/json"],
@@ -180,7 +279,7 @@ class GreenAgent:
     def create_app(self):
 
         executer = Executer(
-            mcp_url=f"http://localhost:{self.mcp_port}"
+            mcp_url=os.getenv("MCP_URL", f"http://green-agent:{self.mcp_port}/sse")
         )
 
         handler = GreenRequestHandler(executer)
