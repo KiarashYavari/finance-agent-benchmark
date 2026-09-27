@@ -33,19 +33,8 @@ from a2a.types import (
     Artifact,
     AgentCard,
     AgentCapabilities,
-    AgentSkill,
-    Part,
-<<<<<<< HEAD
-    TextPart,
-    DataPart,
-    UnsupportedOperationError,
-=======
-    TextPart
->>>>>>> ce090cb4fc21df6ac7795ecb9846c7fc987c26eb
+    AgentSkill
 )
-
-
-
 from a2a.utils.errors import ServerError
 
 from src.executer import Executer
@@ -130,59 +119,8 @@ class GreenRequestHandler(RequestHandler):
             f"{json.dumps(result)}"
 =======
         return Message(
-            messageId=str(uuid.uuid4()),
-            role="agent",
-            parts=[
-                Part(
-                    root=TextPart(
-                        kind="text",
-                        text=json.dumps(result),
-                    )
-                )
-            ],
->>>>>>> ce090cb4fc21df6ac7795ecb9846c7fc987c26eb
-        )
-
-        # ----------------------------------------------------
-        # 4. Create A2A task/context IDs
-        # ----------------------------------------------------
-        task_id = (
-            getattr(params.message, "taskId", None)
-            or str(uuid.uuid4())
-        )
-
-        context_id = (
-            getattr(params.message, "contextId", None)
-            or str(uuid.uuid4())
-        )
-
-        # ----------------------------------------------------
-        # 5. Put leaderboard result in an A2A Artifact
-        # ----------------------------------------------------
-        artifact = Artifact(
-            artifactId=str(uuid.uuid4()),
-            name="assessment_results",
-            description="Finance benchmark assessment results",
-            parts=[
-                Part(
-                    root=DataPart(
-                        kind="data",
-                        data=result,
-                    )
-                )
-            ],
-        )
-
-        # ----------------------------------------------------
-        # 6. Return COMPLETED Task containing the artifact
-        # ----------------------------------------------------
-        return Task(
-            id=task_id,
-            contextId=context_id,
-            status=TaskStatus(
-                state=TaskState.completed,
-            ),
-            artifacts=[artifact],
+            role="assistant",
+            content=result
         )
 
     # Required by abstract base class
